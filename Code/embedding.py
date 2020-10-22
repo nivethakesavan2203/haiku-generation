@@ -31,21 +31,19 @@ Extract features from RobertaModel using BPE text
 embedding_trans = roberta_trans.embeddings(tokens_trans)[0]
 '''
 
-def roberta_embedding(poem):
-    """
-    Calculate the Roberta embedding of the haiku.
+import torch
 
-    :param poem: original haiku.
-    :return: embedding of haiku.
-    """
+class RobertaModel():
+    def __init__(self):
+        self.model = torch.hub.load('pytorch/fairseq', 'roberta.large')
+        self.model.eval()
 
-    roberta = torch.hub.load('pytorch/fairseq', 'roberta.large')
-    roberta.eval()
-
-    def embedding(content):
-        tokens = roberta.encode(content)
-        embed = roberta.extract_features(tokens_torch, return_all_hiddens=True)[0]
-
+    def __call__(self, content):
+        tokens = self.model.encode(content)
+        embed = self.model.extract_features(tokens, return_all_hiddens=True)[0]
         return embed
 
-    return embedding
+
+if __name__ == '__main__':
+    roberta = RobertaModel()
+    encoding = roberta('content goes here')
