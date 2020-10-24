@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn.utils.rnn import pad_sequence
 
 
 class HaikuLSTM(nn.Module):

@@ -1,5 +1,7 @@
-# ---------------------------------------------------------------Method 1-------------------------------------------------------------- #
+import torch
+
 '''
+one method:
 load RoBERTa from torch.hub
 import torch
 
@@ -14,8 +16,8 @@ Extract features from RoBERTa using BPE text
 embedding_torch = roberta_torch.extract_features(tokens_torch, return_all_hiddens=True)[0]
 '''
 
-# ---------------------------------------------------------------Method 2-------------------------------------------------------------- #
 '''
+another method:
 load RoBERTa from transformers, note it does not have .encode(), therefore we need RobertaTokenizer
 import torch
 from transformers import RobertaModel, RobertaTokenizer
@@ -31,8 +33,6 @@ Extract features from RobertaModel using BPE text
 embedding_trans = roberta_trans.embeddings(tokens_trans)[0]
 '''
 
-import torch
-
 
 class RobertaModel():
     def __init__(self):
@@ -46,5 +46,9 @@ class RobertaModel():
 
 
 if __name__ == '__main__':
+    # example usage
     roberta = RobertaModel()
-    encoding = roberta('content goes here')
+    encoding = roberta('trees')
+    encoding2 = roberta('test')
+    encoding3 = roberta('go')
+    encoding4 = roberta('sandwich')
