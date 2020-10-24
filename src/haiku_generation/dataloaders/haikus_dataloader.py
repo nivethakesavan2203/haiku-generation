@@ -2,7 +2,7 @@ import string
 import re
 
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 
 class HaikuDataset(Dataset):
@@ -57,7 +57,3 @@ if __name__ == '__main__':
     # __getitem__ in action
     for i in range(100):
         print(haikus[i])
-
-
-class HaikuDataLoader(DataLoader):
-    pass
