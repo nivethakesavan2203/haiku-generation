@@ -2,7 +2,6 @@ import string
 import re
 
 import pandas as pd
-import torch
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -46,9 +45,15 @@ class HaikuDataset(Dataset):
 
 
 if __name__ == '__main__':
+    # the below line is the Kaggle dataset
     haikus = HaikuDataset('src/datasets/all_haiku.csv', is_kaggle=True)
+
+    # the below line is the "non-kaggle" dataset
+    # haikus = HaikuDataset('src/datasets/Haikus1.csv', is_kaggle=False)
+
     # __len__ in action
     print(len(haikus))
+
     # __getitem__ in action
     for i in range(100):
         print(haikus[i])
