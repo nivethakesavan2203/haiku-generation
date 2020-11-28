@@ -52,3 +52,7 @@ if __name__ == '__main__':
     encoding2 = roberta('test')
     encoding3 = roberta('go')
     encoding4 = roberta('sandwich')
+
+    print(encoding)
+    print(encoding2)
+    print(encoding3)
