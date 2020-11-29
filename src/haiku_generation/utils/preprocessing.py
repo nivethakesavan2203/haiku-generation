@@ -23,13 +23,14 @@ def preprocessText(sampleText):
     sampleText = re.sub(r'[^\w\s]',' ',sampleText)
     # sampleText.translate(str.maketrans('', '', string.punctuation))
     tokenizer = TweetTokenizer()
-    stop_words = set(stopwords.words('english')) 
+    #stop_words = set(stopwords.words('english')) 
     lemmatizer = WordNetLemmatizer()
 
     tokens = tokenizer.tokenize(sampleText)
     lemmas = []
     for word in tokens:
-        if word.isalnum() and not word in stop_words:
+        #if word.isalnum() and not word in stop_words:
+        if word.isalnum():
             word = word.lower()
             word = lemmatizer.lemmatize(word, pos = 'v')
             lemmas.append(word)
