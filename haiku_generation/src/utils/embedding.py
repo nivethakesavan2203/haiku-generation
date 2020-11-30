@@ -35,6 +35,9 @@ embedding_trans = roberta_trans.embeddings(tokens_trans)[0]
 
 
 class RobertaModel():
+    """
+    this is a monstrous model.
+    """
     def __init__(self):
         self.model = torch.hub.load('pytorch/fairseq', 'roberta.large')
         self.model.eval()
