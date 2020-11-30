@@ -1,4 +1,5 @@
 import pandas as pd
+
 import haiku_generation.src.utils.preprocessing as prepro
 
 
@@ -44,7 +45,12 @@ class HaikuDataset():
         return poem
 
     def get_all_poems(self):
-        return self.df['haiku'].values
+        all_haikus = []
+        print(len(self.df['haiku'].values))
+        for haiku in self.df['haiku'].values:
+            haiku_str = ' '.join(map(str, list(haiku)))
+            all_haikus.append(haiku_str)
+        return all_haikus
 
 
 if __name__ == '__main__':
