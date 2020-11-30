@@ -66,7 +66,7 @@ X, Y = pad_text_sequences(sequences)
 
 def LSTM_model():
     model = Sequential()
-    model.add(Embedding(num_words, 20,input_length=len(X[0])+1))
+    model.add(Embedding(num_words, 20,input_length=len(X[0])))
     model.add(LSTM(100))
     model.add(Dropout(0.1))
     model.add(Dense(num_words, activation='softmax'))
@@ -82,7 +82,7 @@ lstm_model.fit(X, Y, epochs=200, batch_size=32, verbose=1)
 def haiku_generation(start_word, total_words, lstm_model):
 
     while len(start_word.split()) != total_words:
-        tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0])+1)
+        tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0]))
 
         pred_ind = lstm_model.predict_classes(tokens, verbose=1)
 
