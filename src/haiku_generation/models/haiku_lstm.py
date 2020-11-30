@@ -6,6 +6,7 @@ from tensorflow.keras.layers import LSTM, Embedding, Dropout, Dense
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 
+# sample haiku data
 haiku_data = ['rectory roofers their ladder take them higher',
             'summer cabin the ants do the dish',
             'lagoon at sunrise the shadow chase its pelican',
@@ -64,17 +65,23 @@ def pad_text_sequences(sequences):
 
 X, Y = pad_text_sequences(sequences)
 
+
 def LSTM_model():
     model = Sequential()
-    model.add(Embedding(num_words, 20,input_length=len(X[0])))
+    model.add(Embedding(num_words, 20, input_length=len(X[0])))
     model.add(LSTM(100))
     model.add(Dropout(0.1))
+    # softmax for probability of most likely *next* word.
     model.add(Dense(num_words, activation='softmax'))
     model.summary()
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     return model
+
+class TorchLSTM():
+    pass
+
 
 lstm_model = LSTM_model()
 lstm_model.fit(X, Y, epochs=200, batch_size=32, verbose=1)
@@ -93,5 +100,5 @@ def haiku_generation(start_word, total_words, lstm_model):
 
     return start_word
 
-haiku = haiku_generation("winter", 9, lstm_model)
+haiku = haiku_generation("wind", 9, lstm_model)
 print(haiku)
