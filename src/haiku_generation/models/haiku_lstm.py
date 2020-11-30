@@ -79,9 +79,6 @@ def LSTM_model():
 
     return model
 
-class TorchLSTM():
-    pass
-
 
 lstm_model = LSTM_model()
 lstm_model.fit(X, Y, epochs=200, batch_size=32, verbose=1)
