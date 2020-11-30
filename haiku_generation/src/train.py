@@ -2,7 +2,7 @@ import keras.utils as utils
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 
-from haiku_generation.src.models.haiku_lstm import get_lstm_model
+from haiku_generation.src.models.models import get_lstm_model
 from haiku_generation.src.dataloaders.haikus_dataloader import HaikuDataset
 
 # sample haiku data
@@ -85,7 +85,8 @@ if __name__ == '__main__':
     X, Y = pad_text_sequences(num_words, sequences)
 
     lstm_model = get_lstm_model(num_words=num_words, X=X)
-    lstm_model.fit(X, Y, epochs=200, batch_size=32, verbose=1)
+    lstm_model.fit(X, Y, epochs=100, batch_size=32, verbose=1)
 
     haiku = haiku_generation("wind", 9, tokenizer, X, lstm_model)
+    # TODO -- demonstrating explainability of the model
     print(haiku)
