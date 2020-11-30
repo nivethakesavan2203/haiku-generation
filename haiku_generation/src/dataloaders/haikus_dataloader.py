@@ -60,3 +60,5 @@ if __name__ == '__main__':
     # __getitem__ in action
     for i in range(100):
         print(haikus[i])
+
+    print(haikus.get_all_poems())
