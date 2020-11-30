@@ -1,6 +1,4 @@
-import tensorflow as tf
 import keras.utils as utils
-import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Embedding, Dropout, Dense
 from keras.preprocessing.text import Tokenizer
@@ -83,8 +81,8 @@ def LSTM_model():
 lstm_model = LSTM_model()
 lstm_model.fit(X, Y, epochs=200, batch_size=32, verbose=1)
 
-def haiku_generation(start_word, total_words, lstm_model):
 
+def haiku_generation(start_word, total_words, lstm_model):
     while len(start_word.split()) != total_words:
         tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0]))
 

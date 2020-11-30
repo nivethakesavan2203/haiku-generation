@@ -2,12 +2,14 @@ import string
 import csv
 import re
 import pandas as pd
+import nltk
 from nltk import pos_tag
 from nltk import sent_tokenize
 from nltk.tokenize import TweetTokenizer
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
+nltk.download('wordnet')
 
 
 def simple_parse(filename):
@@ -18,8 +20,7 @@ def simple_parse(filename):
     return df.haikus
 
 
-def preprocessText(sampleText):
-
+def preprocess_text(sampleText):
     sampleText = re.sub(r'[^\w\s]',' ',sampleText)
     # sampleText.translate(str.maketrans('', '', string.punctuation))
     tokenizer = TweetTokenizer()
@@ -43,5 +44,4 @@ def preprocessText(sampleText):
         tokens.remove("\n")
     while "\n\n" in tokens:
         tokens.remove("\n\n")
-
     return tokens

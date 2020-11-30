@@ -1,5 +1,5 @@
 pandas
 torch
-tensorflow
-keras
-nltk
+# tensorflow
+# keras
+# nltk

@@ -1,11 +1,8 @@
-import string
-import re
-
 import pandas as pd
-from torch.utils.data import Dataset
+import haiku_generation.src.utils.preprocessing as prepro
 
 
-class HaikuDataset(Dataset):
+class HaikuDataset():
     """
     haiku dataset -- works on two types of datasets:
 
@@ -22,9 +19,12 @@ class HaikuDataset(Dataset):
             df['haiku'] = df['first'] + ' ' + df['second'] + ' ' + df['third']
             df['haiku'] = df['haiku'].astype(str)
 
-        df['haiku'] = df['haiku'].apply(lambda x: x.lower())
-        df['haiku'] = df['haiku'].apply(lambda x: x.translate(str.maketrans('', '', string.punctuation)))
-        df['haiku'] = df['haiku'].apply(lambda x: x.replace('\n', ' '))
+        # do preprocessing here:
+
+
+        df['haiku'] = df['haiku'].apply(lambda x: prepro.preprocess_text(x))
+        # df['haiku'] = df['haiku'].apply(lambda x: x.translate(str.maketrans('', '', string.punctuation)))
+        # df['haiku'] = df['haiku'].apply(lambda x: x.replace('\n', ' '))
         self.df = df.dropna()
 
     def __len__(self):
@@ -38,15 +38,18 @@ class HaikuDataset(Dataset):
         gets an item from the haikus dataset.
         """
         poem = self.df['haiku'].values[index]
-        # clean up and parse the poem
-        cleaned_poem = re.sub(' +', ' ', poem)
-        word_list = re.sub("[^\w]", " ",  cleaned_poem).split()
-        return word_list
+        # # clean up and parse the poem
+        # cleaned_poem = re.sub(' +', ' ', poem)
+        # word_list = re.sub("[^\w]", " ",  cleaned_poem).split()
+        return poem
+
+    def get_all_poems(self):
+        return self.df['haiku'].values
 
 
 if __name__ == '__main__':
     # the below line is the Kaggle dataset
-    haikus = HaikuDataset('src/datasets/all_haiku.csv', is_kaggle=True)
+    haikus = HaikuDataset('/home/peasant98/Documents/haiku-generation/haiku_generation/datasets/all_haiku.csv', is_kaggle=True)
 
     # the below line is the "non-kaggle" dataset
     # haikus = HaikuDataset('src/datasets/Haikus1.csv', is_kaggle=False)
