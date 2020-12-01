@@ -1,7 +1,12 @@
 from matplotlib.pyplot import plot
+# this is needed to avoid an error, even though the import isn't used
+# (don't delete the below line)
+from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
+from sklearn.manifold import TSNE
 
 import collections
 import nltk
@@ -124,7 +129,7 @@ def evaluation(haiku_data, generated_haiku):
 
 def run_ablative_experiments(haiku_data, tokenizer,
                              model_type='lstm', total_training_amount=200,
-                             num_epochs=100, batch_size=32,
+                             num_epochs=150, batch_size=32,
                              embedding_dim=20, num_units=100, dropout=0.1,
                              optimizer='adam', lr=0.001, validation_split=0.2,
                              train_test_split_val=0.2, dict_label='standard'):
@@ -169,24 +174,33 @@ def explainability_fnc():
     pass
 
 
-def get_embedding_layer(text, model):
-    tokens = pad_sequences([tokenizer.texts_to_sequences([text])[0]], maxlen=len(X[0]))
+def get_embedding_layer(start_word, total_words, model, X):
+    while len(start_word.split()) != total_words:
+        tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0]))
 
-    pred_ind = model.predict_classes(tokens, verbose=1)
+        inp = model.input
+        outputs = [layer.output for layer in model.layers]
+        functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
 
-    # for key, value in tokenizer.word_index.items():
-    #     if value == pred_ind:
-    #         start_word = start_word + ' ' + key
-    #         break
+        # Testing
+        layer_outs = [func([tokens, 1.]) for func in functors]
+        embedding_layer = layer_outs[0]
+        layer_shape = embedding_layer.shape
+        embedding_layer = embedding_layer.reshape((layer_shape[1], layer_shape[2]))
+        X_embedded = TSNE(n_components=2).fit_transform(embedding_layer[-1])
 
-    inp = model.input
-    outputs = [layer.output for layer in model.layers]
-    functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
 
-    # Testing
-    layer_outs = [func([tokens, 1.]) for func in functors]
-    print(layer_outs)
+    return embedding_layer
 
+
+def plot_embeddings(vectors):
+    if vectors.shape[-1] == 2:
+        pass
+    elif vectors.shape[-1] == 3:
+        pass
+    else:
+        # don't plot anything here.
+        pass
 
 def plot_losses(train_dict_list, test_dict_list):
     """
@@ -279,8 +293,8 @@ if __name__ == '__main__':
     #     test_dict_list.append(test)
     # plot_losses(train_dict_list, test_dict_list)
     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
-    haiku = haiku_generation("king", 9, tokenizer, tokenized_data, model)
-    get_embedding_layer("king", model)
+    haiku = haiku_generation("wind", 9, tokenizer, tokenized_data, model)
+    get_embedding_layer("wind", 9, model, tokenized_data)
     print('Generated Haiku:', haiku)
 
     start_words = ['wind', 'morning', 'twilight', 'water', 'snow', 'I']
