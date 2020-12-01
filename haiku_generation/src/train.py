@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
+import collections
+import nltk
 import keras.utils as utils
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -84,6 +86,41 @@ def haiku_generation(start_word, total_words, tokenizer, X, lstm_model):
 
     return start_word
 
+def evaluation(haiku_data, generated_haiku):
+    #using preplexity to evaluate
+    #evaluation code from https://stackoverflow.com/questions/33266956/nltk-package-to-estimate-the-unigram-perplexity
+    tokens_list = []
+    for haiku in haiku_data:
+        tokens_list.append(nltk.word_tokenize(haiku))
+    tokens = [item for sublist in tokens_list for item in sublist]
+    # here you construct the unigram language model
+    def unigram(tokens):
+        model = collections.defaultdict(lambda: 0.01)
+        for f in tokens:
+            try:
+                model[f] += 1
+            except KeyError:
+                model[f] = 1
+                continue
+        N = float(sum(model.values()))
+        for word in model:
+            model[word] = model[word] / N
+        return model
+
+    # computes perplexity of the unigram model on a testset
+    def perplexity(testset, model):
+        testset = testset.split()
+        perplexity = 1
+        N = 0
+        for word in testset:
+            N += 1
+            perplexity = perplexity * (1 / model[word])
+        perplexity = pow(perplexity, 1 / float(N))
+        return perplexity
+
+    model = unigram(tokens)
+    print("Perplexity score:")
+    print(perplexity(generated_haiku, model))
 
 def run_ablative_experiments(haiku_data, tokenizer,
                              model_type='lstm', total_training_amount=200,
@@ -244,5 +281,13 @@ if __name__ == '__main__':
     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
     haiku = haiku_generation("king", 9, tokenizer, tokenized_data, model)
     get_embedding_layer("king", model)
-    # TODO -- demonstrate explainability of the model
     print('Generated Haiku:', haiku)
+
+    start_words = ['wind', 'morning', 'twilight', 'water', 'snow', 'I']
+    for word in start_words:
+        haiku = haiku_generation(word, 9, tokenizer, tokenized_data, model)
+        print(haiku)
+        evaluation(haiku_data, haiku)
+
+
+
