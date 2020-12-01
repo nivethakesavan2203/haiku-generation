@@ -104,8 +104,10 @@ def haiku_generation(haiku, total_words, tokenizer, X, model):
     while len(haiku.split()) != total_words:
         tokens = pad_sequences([tokenizer.texts_to_sequences([haiku])[0]], maxlen=len(X[0]))
 
+        # predict the next word's index based on the current haiku
         pred_ind = model.predict_classes(tokens, verbose=1)
 
+        # get the word corresponding to the predicted index and add to the current haiku
         for key, value in tokenizer.word_index.items():
             if value == pred_ind:
                 haiku = haiku + ' ' + key
