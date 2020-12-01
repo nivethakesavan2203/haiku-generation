@@ -57,7 +57,7 @@ from haiku_generation.src.dataloaders.haikus_dataloader import HaikuDataset
 
 def get_n_gram_text_sequences(tokenizer, text_data):
     tokenizer.fit_on_texts(text_data)
-
+    total_words = len(tokenizer.word_index)+1
     sequences = []
 
     for haiku in text_data:
@@ -66,7 +66,14 @@ def get_n_gram_text_sequences(tokenizer, text_data):
         for j in range(1, len(haiku_token)):
             sequences.append(haiku_token[:j+1])
 
-    return sequences, len(tokenizer.word_index)+1
+    # [2, 31, 5, 62, 33]
+    # sequences = [[2],
+    #             [2, 31],
+    #             [2, 31, 5],
+    #             [2, 31, 5, 62],
+    #             [2, 31, 5, 62, 33], ...]
+
+    return sequences, total_words
 
 
 def pad_text_sequences(num_words, sequences):
