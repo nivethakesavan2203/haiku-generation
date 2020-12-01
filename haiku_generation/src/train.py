@@ -19,7 +19,7 @@ from haiku_generation.src.models.models import (
     get_rnn_model,
     get_lstm_model,
     get_gru_model
-) 
+)
 from haiku_generation.src.dataloaders.haikus_dataloader import HaikuDataset
 
 # sample haiku data
@@ -78,18 +78,18 @@ def pad_text_sequences(num_words, sequences):
     return texts, labels
 
 
-def haiku_generation(start_word, total_words, tokenizer, X, lstm_model):
-    while len(start_word.split()) != total_words:
-        tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0]))
+def haiku_generation(haiku, total_words, tokenizer, X, model):
+    while len(haiku.split()) != total_words:
+        tokens = pad_sequences([tokenizer.texts_to_sequences([haiku])[0]], maxlen=len(X[0]))
 
-        pred_ind = lstm_model.predict_classes(tokens, verbose=1)
+        pred_ind = model.predict_classes(tokens, verbose=1)
 
         for key, value in tokenizer.word_index.items():
             if value == pred_ind:
-                start_word = start_word + ' ' + key
+                haiku = haiku + ' ' + key
                 break
 
-    return start_word
+    return haiku
 
 def evaluation(haiku_data, generated_haiku):
     #using preplexity to evaluate
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     train_dict_list = []
     test_dict_list = []
     # for batch_size in [8, 16, 32, 64]:
-    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer, 
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
     #                                                                   batch_size=batch_size,
     #                                                                   dict_label=f'Batch size {batch_size}')
     #     train_dict_list.append(train)
@@ -259,7 +259,7 @@ if __name__ == '__main__':
     # plot_losses(train_dict_list, test_dict_list)
 
     # for embedding_dim in [3, 10, 20, 50]:
-    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer, 
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
     #                                                                   embedding_dim=embedding_dim,
     #                                                                   dict_label=f'Embedding {embedding_dim}')
     #     train_dict_list.append(train)
@@ -302,6 +302,3 @@ if __name__ == '__main__':
         haiku = haiku_generation(word, 9, tokenizer, tokenized_data, model)
         print(haiku)
         evaluation(haiku_data, haiku)
-
-
-
