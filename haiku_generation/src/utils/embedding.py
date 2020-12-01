@@ -39,7 +39,7 @@ class RobertaModel():
     this is a monstrous model.
     """
     def __init__(self):
-        self.model = torch.hub.load('pytorch/fairseq', 'roberta.large')
+        self.model = torch.hub.load('pytorch/fairseq', 'roberta.base')
         self.model.eval()
 
     def __call__(self, content):
