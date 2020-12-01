@@ -21,7 +21,7 @@ from haiku_generation.src.models.models import (
     get_rnn_model,
     get_lstm_model,
     get_gru_model
-) 
+)
 from haiku_generation.src.dataloaders.haikus_dataloader import HaikuDataset
 
 # sample haiku data
@@ -59,7 +59,7 @@ from haiku_generation.src.dataloaders.haikus_dataloader import HaikuDataset
 
 def get_n_gram_text_sequences(tokenizer, text_data):
     tokenizer.fit_on_texts(text_data)
-
+    total_words = len(tokenizer.word_index)+1
     sequences = []
 
     for haiku in text_data:
@@ -68,30 +68,54 @@ def get_n_gram_text_sequences(tokenizer, text_data):
         for j in range(1, len(haiku_token)):
             sequences.append(haiku_token[:j+1])
 
-    return sequences, len(tokenizer.word_index)+1
+    # [2, 31, 5, 62, 33]
+    # sequences = [[2],
+    #             [2, 31],
+    #             [2, 31, 5],
+    #             [2, 31, 5, 62],
+    #             [2, 31, 5, 62, 33], ...]
+
+    return sequences, total_words
 
 
 def pad_text_sequences(num_words, sequences):
     input_sequences = pad_sequences(sequences)
 
+    # [2, 31, 5, 62, 33]
+    # sequences = [[0, 0, 0, 0, 2],
+    #             [0, 0, 0, 2, 31],
+    #             [0, 0, 2, 31, 5],
+    #             [0, 2, 31, 5, 62],
+    #             [2, 31, 5, 62, 33], ...]
+
+    # array[:, :-1] for all rows, keep all columns excpet the last column
+    # array[:, -1] for all rows, keep only the last column
     texts, labels = input_sequences[:, :-1], input_sequences[:, -1]
     labels = utils.to_categorical(labels, num_classes=num_words)
+
+    # text [0, 0, 0, 0] label [2]
+    # text [0, 0, 0, 2] label [31]
+    # text [0, 0, 2, 31] label [5]
+    # text [0, 2, 31, 5] label [62]
+    # text [2, 31, 5, 62] label [33]
 
     return texts, labels
 
 
-def haiku_generation(start_word, total_words, tokenizer, X, lstm_model):
-    while len(start_word.split()) != total_words:
-        tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0]))
+def haiku_generation(haiku, total_words, tokenizer, X, model):
+    while len(haiku.split()) != total_words:
+        tokens = pad_sequences([tokenizer.texts_to_sequences([haiku])[0]], maxlen=len(X[0]))
 
-        pred_ind = lstm_model.predict_classes(tokens, verbose=1)
+        # predict the next word's index based on the current haiku
+        pred_ind = model.predict_classes(tokens, verbose=1)
 
+        # get the word corresponding to the predicted index and add to the current haiku
         for key, value in tokenizer.word_index.items():
             if value == pred_ind:
-                start_word = start_word + ' ' + key
+                haiku = haiku + ' ' + key
                 break
 
-    return start_word
+    return haiku
 
 def evaluation(haiku_data, generated_haiku):
     #using preplexity to evaluate
@@ -275,7 +299,7 @@ if __name__ == '__main__':
     train_dict_list = []
     test_dict_list = []
     # for batch_size in [8, 16, 32, 64]:
-    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer, 
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
     #                                                                   batch_size=batch_size,
     #                                                                   dict_label=f'Batch size {batch_size}')
     #     train_dict_list.append(train)
@@ -283,7 +307,7 @@ if __name__ == '__main__':
     # plot_losses(train_dict_list, test_dict_list)
 
     # for embedding_dim in [3, 10, 20, 50]:
-    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer, 
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
     #                                                                   embedding_dim=embedding_dim,
     #                                                                   dict_label=f'Embedding {embedding_dim}')
     #     train_dict_list.append(train)
@@ -316,7 +340,7 @@ if __name__ == '__main__':
     #     train_dict_list.append(train)
     #     test_dict_list.append(test)
     # plot_losses(train_dict_list, test_dict_list)
-    # test, train, tokenized_data, model, haiku_data = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
+    test, train, tokenized_data, model, haiku_data = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
 
     # # save
     # model.save('haiku_lstm')
@@ -339,11 +363,9 @@ if __name__ == '__main__':
         plot_embeddings(vecs, wl)
         haiku = haiku_generation(word, 9, tokenizer, tokenized_data, model)
         print('Generated Haiku:', haiku)
-
     # for word in start_words:
     #     haiku = haiku_generation(word, 9, tokenizer, tokenized_data, model)
     #     print(haiku)
     #     evaluation(haiku_data, haiku)
-
-
-
+        print(haiku)
+        evaluation(haiku_data, haiku)
