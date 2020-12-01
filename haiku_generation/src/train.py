@@ -1,8 +1,18 @@
+from matplotlib.pyplot import plot
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
 import keras.utils as utils
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from keras import backend as K
 
-from haiku_generation.src.models.models import get_lstm_model
+from haiku_generation.src.models.models import (
+    get_rnn_model,
+    get_lstm_model,
+    get_gru_model
+) 
 from haiku_generation.src.dataloaders.haikus_dataloader import HaikuDataset
 
 # sample haiku data
@@ -55,7 +65,7 @@ def get_n_gram_text_sequences(tokenizer, text_data):
 def pad_text_sequences(num_words, sequences):
     input_sequences = pad_sequences(sequences)
 
-    texts, labels = input_sequences[:,:-1], input_sequences[:,-1]
+    texts, labels = input_sequences[:, :-1], input_sequences[:, -1]
     labels = utils.to_categorical(labels, num_classes=num_words)
 
     return texts, labels
@@ -75,18 +85,164 @@ def haiku_generation(start_word, total_words, tokenizer, X, lstm_model):
     return start_word
 
 
+def run_ablative_experiments(haiku_data, tokenizer,
+                             model_type='lstm', total_training_amount=200,
+                             num_epochs=100, batch_size=32,
+                             embedding_dim=20, num_units=100, dropout=0.1,
+                             optimizer='adam', lr=0.001, validation_split=0.2,
+                             train_test_split_val=0.2, dict_label='standard'):
+    """
+    run ablative experiments with various parameters.
+    """
+    haiku_data = haiku_data[:total_training_amount]
+
+    sequences_full, num_words_full = get_n_gram_text_sequences(tokenizer, haiku_data)
+
+    X_full, Y_full = pad_text_sequences(num_words_full, sequences_full)
+
+    X_train, X_test, Y_train, Y_test = train_test_split(X_full, Y_full, test_size=train_test_split_val)
+    if model_type == 'rnn':
+        model = get_rnn_model(num_words=num_words_full, X=X_full,
+                              embedding_dim=embedding_dim, num_units=num_units,
+                              dropout=dropout, optimizer_name=optimizer,
+                              lr=lr)
+
+    elif model_type == 'lstm':
+        model = get_lstm_model(num_words=num_words_full, X=X_full,
+                               embedding_dim=embedding_dim, num_units=num_units,
+                               dropout=dropout, optimizer_name=optimizer,
+                               lr=lr)
+
+    elif model_type == 'gru':
+        model = get_gru_model(num_words=num_words_full, X=X_full,
+                              embedding_dim=embedding_dim, num_units=num_units,
+                              dropout=dropout, optimizer_name=optimizer,
+                              lr=lr)
+    else:
+        return [], [], []
+
+    history = model.fit(X_train, Y_train, epochs=num_epochs, batch_size=batch_size, verbose=1, validation_split=validation_split)
+    eval_results = model.evaluate(X_test, Y_test, verbose=1)
+    final_eval_result_dict = dict(zip(model.metrics_names, eval_results))
+    history.history['label'] = dict_label
+    return final_eval_result_dict, history.history, X_full, model
+
+
+def explainability_fnc():
+    pass
+
+
+def get_embedding_layer(text, model):
+    tokens = pad_sequences([tokenizer.texts_to_sequences([text])[0]], maxlen=len(X[0]))
+
+    pred_ind = model.predict_classes(tokens, verbose=1)
+
+    # for key, value in tokenizer.word_index.items():
+    #     if value == pred_ind:
+    #         start_word = start_word + ' ' + key
+    #         break
+
+    inp = model.input
+    outputs = [layer.output for layer in model.layers]
+    functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
+
+    # Testing
+    layer_outs = [func([tokens, 1.]) for func in functors]
+    print(layer_outs)
+
+
+def plot_losses(train_dict_list, test_dict_list):
+    """
+    plots the losses from the keras training history
+    """
+    for train_dict in train_dict_list:
+        train_loss = train_dict['loss']
+        train_acc = train_dict['acc']
+
+        val_loss = train_dict['val_loss']
+        val_acc = train_dict['val_acc']
+
+        plt.plot(train_loss, label=train_dict['label'])
+    plt.title('Plot of training losses for Sequence based models')
+    plt.xlabel('Epoch')
+    plt.ylabel('CE Loss')
+    plt.legend()
+    plt.show()
+
+    for train_dict in train_dict_list:
+        train_acc = train_dict['acc']
+        plt.plot(train_acc, label=train_dict['label'])
+
+    plt.title('Plot of training accuracy for Sequence based models')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     haikus = HaikuDataset('/home/peasant98/Documents/haiku-generation/haiku_generation/datasets/all_haiku.csv', is_kaggle=True)
-    haiku_data = haikus.get_all_poems()[:1000]
+    haiku_data = haikus.get_all_poems()
+    np.random.shuffle(haiku_data)
     tokenizer = Tokenizer()
 
-    sequences, num_words = get_n_gram_text_sequences(tokenizer, haiku_data)
+    # experiment time.
+    # compare different model types
+    # train_dict_list = []
+    # test_dict_list = []
+    # for model_type in ["rnn", "lstm", "gru"]:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
+    #                                                                   model_type=model_type, dict_label=model_type)
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
+    # plot_losses(train_dict_list, test_dict_list)
+    # vary batch size
+    train_dict_list = []
+    test_dict_list = []
+    # for batch_size in [8, 16, 32, 64]:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer, 
+    #                                                                   batch_size=batch_size,
+    #                                                                   dict_label=f'Batch size {batch_size}')
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
+    # plot_losses(train_dict_list, test_dict_list)
 
-    X, Y = pad_text_sequences(num_words, sequences)
+    # for embedding_dim in [3, 10, 20, 50]:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer, 
+    #                                                                   embedding_dim=embedding_dim,
+    #                                                                   dict_label=f'Embedding {embedding_dim}')
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
 
-    lstm_model = get_lstm_model(num_words=num_words, X=X)
-    lstm_model.fit(X, Y, epochs=100, batch_size=32, verbose=1)
+    # for num_units in [50, 100, 150, 200]:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
+    #                                                                   num_units=num_units,
+    #                                                                   dict_label=f'Num units {num_units}')
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
 
-    haiku = haiku_generation("wind", 9, tokenizer, X, lstm_model)
-    # TODO -- demonstrating explainability of the model
-    print(haiku)
+    # for dropout in [0.1, 0.3, 0.5, 0.9]:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
+    #                                                                   dropout=dropout,
+    #                                                                   dict_label=f'Dropout {dropout}')
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
+    # for optimizer in ['adam', 'rmsprop', 'sgd', 'adadelta', 'nadam']:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
+    #                                                                   optimizer=optimizer,
+    #                                                                   dict_label=f'Optimizer {optimizer}')
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
+
+    # for lr in [0.0001, 0.001, 0.01, 0.1, 1]:
+    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
+    #                                                                   lr=lr,
+    #                                                                   dict_label=f'Learning Rate {lr}')
+    #     train_dict_list.append(train)
+    #     test_dict_list.append(test)
+    # plot_losses(train_dict_list, test_dict_list)
+    test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
+    haiku = haiku_generation("king", 9, tokenizer, tokenized_data, model)
+    get_embedding_layer("king", model)
+    # TODO -- demonstrate explainability of the model
+    print('Generated Haiku:', haiku)
