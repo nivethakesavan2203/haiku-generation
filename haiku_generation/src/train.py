@@ -1,3 +1,4 @@
+import pickle
 from matplotlib.pyplot import plot
 # this is needed to avoid an error, even though the import isn't used
 # (don't delete the below line)
@@ -14,6 +15,7 @@ import keras.utils as utils
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras import backend as K
+from tensorflow import keras
 
 from haiku_generation.src.models.models import (
     get_rnn_model,
@@ -129,7 +131,7 @@ def evaluation(haiku_data, generated_haiku):
 
 def run_ablative_experiments(haiku_data, tokenizer,
                              model_type='lstm', total_training_amount=200,
-                             num_epochs=150, batch_size=32,
+                             num_epochs=200, batch_size=32,
                              embedding_dim=20, num_units=100, dropout=0.1,
                              optimizer='adam', lr=0.001, validation_split=0.2,
                              train_test_split_val=0.2, dict_label='standard'):
@@ -167,40 +169,62 @@ def run_ablative_experiments(haiku_data, tokenizer,
     eval_results = model.evaluate(X_test, Y_test, verbose=1)
     final_eval_result_dict = dict(zip(model.metrics_names, eval_results))
     history.history['label'] = dict_label
-    return final_eval_result_dict, history.history, X_full, model
+    return final_eval_result_dict, history.history, X_full, model, haiku_data
 
 
 def explainability_fnc():
     pass
 
 
+def get_tokenized_data(haiku_data, total_training_amount=200, train_test_split_val=0.2):
+    haiku_data = haiku_data[:total_training_amount]
+
+    sequences_full, num_words_full = get_n_gram_text_sequences(tokenizer, haiku_data)
+
+    X_full, Y_full = pad_text_sequences(num_words_full, sequences_full)
+
+    return X_full
+
+
 def get_embedding_layer(start_word, total_words, model, X):
+    embeddings_list = []
+    words_list = [start_word]
     while len(start_word.split()) != total_words:
         tokens = pad_sequences([tokenizer.texts_to_sequences([start_word])[0]], maxlen=len(X[0]))
 
         inp = model.input
         outputs = [layer.output for layer in model.layers]
         functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
+        pred_ind = model.predict_classes(tokens, verbose=1)
 
+        for key, value in tokenizer.word_index.items():
+            if value == pred_ind:
+                start_word = start_word + ' ' + key
+                words_list.append(key)
+                break
         # Testing
         layer_outs = [func([tokens, 1.]) for func in functors]
         embedding_layer = layer_outs[0]
-        layer_shape = embedding_layer.shape
-        embedding_layer = embedding_layer.reshape((layer_shape[1], layer_shape[2]))
-        X_embedded = TSNE(n_components=2).fit_transform(embedding_layer[-1])
+        layer_shape = embedding_layer[0].shape
+        embedding_layer = embedding_layer[0].reshape((layer_shape[1], layer_shape[2]))
+        embeddings_list.append(embedding_layer[-1])
+    X_embedded = TSNE(n_components=2).fit_transform(np.array(embeddings_list))
+
+    return X_embedded, words_list[:-1]
 
 
-    return embedding_layer
-
-
-def plot_embeddings(vectors):
+def plot_embeddings(vectors, words_list):
     if vectors.shape[-1] == 2:
-        pass
+        for idx, vector in enumerate(vectors):
+            plt.scatter(x=vector[0], y=vector[1], label=words_list[idx])
+        plt.legend()
+        plt.show()
     elif vectors.shape[-1] == 3:
-        pass
+        pass    
     else:
         # don't plot anything here.
         pass
+
 
 def plot_losses(train_dict_list, test_dict_list):
     """
@@ -292,16 +316,34 @@ if __name__ == '__main__':
     #     train_dict_list.append(train)
     #     test_dict_list.append(test)
     # plot_losses(train_dict_list, test_dict_list)
-    test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
-    haiku = haiku_generation("wind", 9, tokenizer, tokenized_data, model)
-    get_embedding_layer("wind", 9, model, tokenized_data)
-    print('Generated Haiku:', haiku)
+    # test, train, tokenized_data, model, haiku_data = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer)
 
-    start_words = ['wind', 'morning', 'twilight', 'water', 'snow', 'I']
+    # # save
+    # model.save('haiku_lstm')
+    # with open('tokenized_data.npy', 'wb') as f:
+    #     np.save(f, np.array(tokenized_data))
+
+    # pickle.dump(haiku_data, open( "haiku_data.p","wb"))
+
+    # load
+    model = keras.models.load_model('haiku_lstm')
+    with open('tokenized_data.npy', 'rb') as f:
+        tokenized_data = np.load(f)
+
+    haiku_data = pickle.load(open( "haiku_data.p","rb"))
+    tokenizer.fit_on_texts(haiku_data)
+
+    start_words = ['night', 'morning', 'twilight', 'water', 'snow', 'I', 'love', 'king']
     for word in start_words:
+        vecs, wl = get_embedding_layer(word, 9, model, tokenized_data)
+        plot_embeddings(vecs, wl)
         haiku = haiku_generation(word, 9, tokenizer, tokenized_data, model)
-        print(haiku)
-        evaluation(haiku_data, haiku)
+        print('Generated Haiku:', haiku)
+
+    # for word in start_words:
+    #     haiku = haiku_generation(word, 9, tokenizer, tokenized_data, model)
+    #     print(haiku)
+    #     evaluation(haiku_data, haiku)
 
 
 
