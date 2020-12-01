@@ -79,8 +79,23 @@ def get_n_gram_text_sequences(tokenizer, text_data):
 def pad_text_sequences(num_words, sequences):
     input_sequences = pad_sequences(sequences)
 
+    # [2, 31, 5, 62, 33]
+    # sequences = [[0, 0, 0, 0, 2],
+    #             [0, 0, 0, 2, 31],
+    #             [0, 0, 2, 31, 5],
+    #             [0, 2, 31, 5, 62],
+    #             [2, 31, 5, 62, 33], ...]
+
+    # array[:, :-1] for all rows, keep all columns excpet the last column
+    # array[:, -1] for all rows, keep only the last column
     texts, labels = input_sequences[:, :-1], input_sequences[:, -1]
     labels = utils.to_categorical(labels, num_classes=num_words)
+
+    # text [0, 0, 0, 0] label [2]
+    # text [0, 0, 0, 2] label [31]
+    # text [0, 0, 2, 31] label [5]
+    # text [0, 2, 31, 5] label [62]
+    # text [2, 31, 5, 62] label [33]
 
     return texts, labels
 
