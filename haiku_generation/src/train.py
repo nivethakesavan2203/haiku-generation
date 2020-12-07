@@ -153,9 +153,10 @@ def evaluation(haiku_data, generated_haiku):
     print("Perplexity score:")
     print(perplexity(generated_haiku, model))
 
+
 def run_ablative_experiments(haiku_data, tokenizer,
-                             model_type='lstm', total_training_amount=200,
-                             num_epochs=200, batch_size=32,
+                             model_type='lstm', total_training_amount=5000,
+                             num_epochs=100, batch_size=32,
                              embedding_dim=20, num_units=100, dropout=0.1,
                              optimizer='adam', lr=0.001, validation_split=0.2,
                              train_test_split_val=0.2, dict_label='standard'):
@@ -287,14 +288,20 @@ if __name__ == '__main__':
 
     # experiment time.
     # compare different model types
-    # train_dict_list = []
-    # test_dict_list = []
-    # for model_type in ["rnn", "lstm", "gru"]:
-    #     test, train, tokenized_data, model = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
-    #                                                                   model_type=model_type, dict_label=model_type)
-    #     train_dict_list.append(train)
-    #     test_dict_list.append(test)
-    # plot_losses(train_dict_list, test_dict_list)
+    train_dict_list = []
+    test_dict_list = []
+    for model_type in ["rnn", "lstm", "gru"]:
+        test, train, tokenized_data, model, haiku_data = run_ablative_experiments(haiku_data=haiku_data, tokenizer=tokenizer,
+                                                                      model_type=model_type, dict_label=model_type)
+        train_dict_list.append(train)
+        test_dict_list.append(test)
+        model.save(f'haiku_{model_type}')
+        with open(f'tokenized_data_{model_type}.npy', 'wb') as f:
+            np.save(f, np.array(tokenized_data))
+
+        pickle.dump(haiku_data, open(f"haiku_data_{model_type}.p","wb"))
+
+    plot_losses(train_dict_list, test_dict_list)
     # vary batch size
     train_dict_list = []
     test_dict_list = []
